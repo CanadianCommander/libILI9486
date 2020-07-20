@@ -128,16 +128,17 @@ void writeDisplay(struct DisplayInterface* dInterface, uint16_t * data,
 * @param y - the y position to write the data at.
 * @param width - the width of the data
 * @param height - the height of the data
+* @param scale - scaling of the image
 */
 void writeDisplay1bpp(struct DisplayInterface* dInterface, uint8_t * data,
                   uint16_t color, uint16_t altColor, uint16_t x, uint16_t y,
-                  uint16_t width, uint16_t height)
+                  uint16_t width, uint16_t height, float scale)
 {
   // set draw area
-  setDrawRegion(dInterface, x, y, width, height);
+  setDrawRegion(dInterface, x, y, width*scale, height*scale);
 
   // write pixel data
-  setPixels(dInterface, (uint8_t*)data, width, height, 1.0, BIT_DEPTH_1BPP, color, altColor);
+  setPixels(dInterface, (uint8_t*)data, width, height, scale, BIT_DEPTH_1BPP, color, altColor);
 }
 
 void readDisplay(struct DisplayInterface* dInterface, uint16_t * data,

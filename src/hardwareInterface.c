@@ -102,18 +102,92 @@ static void setPinsForCommandResponse(struct DisplayInterface* dInterface)
 }
 
 static void setPixelsNatvie(struct DisplayInterface* dInterface, uint8_t * data,
-              uint16_t width, uint16_t height, float scale)
+              const uint16_t width, const uint16_t height, float scale)
 {
-  uint16_t scaledWidth = width*scale;
-  uint16_t scaledHeight = height*scale;
+  if (scale != 1.0)
+  {
+    uint16_t scaledWidth = width*scale;
+    uint16_t scaledHeight = height*scale;
 
-  for(uint16_t y = 0; y < scaledHeight; y ++){
-    for(uint16_t x = 0; x < scaledWidth; x ++){
-      uint16_t color = ((uint16_t*)data)[(int)((((int)(y/scale))*width) + (int)x/scale)];
+    for(uint16_t y = 0; y < scaledHeight; y ++)
+    {
+      for(uint16_t x = 0; x < scaledWidth; x ++)
+      {
+        uint16_t color = ((uint16_t*)data)[(int)((((int)(y/scale))*width) + (int)x/scale)];
+        setPinsForCommandParam(dInterface, (uint8_t)(color >> 8));
+        writeStrobe(dInterface);
+        setPinsForCommandParam(dInterface, (uint8_t)color);
+        writeStrobe(dInterface);
+      }
+    }
+  }
+  else
+  {
+    for(uint32_t i =0; i < width*height*2; i ++)
+    {
+      setPinsForCommandParam(dInterface, data[i]);
+      writeStrobe(dInterface);
+    }
+  }
+}
+
+static void setPixels1bpp(struct DisplayInterface* dInterface, uint8_t * data,
+              uint16_t width, uint16_t height, float scale, uint16_t primaryColor, uint16_t secondaryColor)
+{
+  uint16_t color = 0x0000;
+  uint32_t dataIndex = 0;
+  uint8_t byteIndex = 7;
+  uint32_t pixelIndex = 0;
+
+  if (scale != 1.0)
+  {
+    uint16_t scaledWidth = width*scale;
+    uint16_t scaledHeight = height*scale;
+
+    for(uint16_t y = 0; y < scaledHeight; y ++)
+    {
+      for(uint16_t x = 0; x < scaledWidth; x ++)
+      {
+        int selectedPixel = (int)((((int)(y/scale))*width) + (int)x/scale);
+        dataIndex = selectedPixel/8;
+        byteIndex = 7 - (selectedPixel % 8);
+
+        color = secondaryColor;
+        if (data[dataIndex] & (1 << byteIndex))
+        {
+            color = primaryColor;
+        }
+        setPinsForCommandParam(dInterface, (uint8_t)(color >> 8));
+        writeStrobe(dInterface);
+        setPinsForCommandParam(dInterface, (uint8_t)color);
+        writeStrobe(dInterface);
+      }
+    }
+  }
+  else
+  {
+    while(pixelIndex < width*height)
+    {
+      color = secondaryColor;
+      if (data[dataIndex] & (1 << byteIndex))
+      {
+          color = primaryColor;
+      }
       setPinsForCommandParam(dInterface, (uint8_t)(color >> 8));
       writeStrobe(dInterface);
       setPinsForCommandParam(dInterface, (uint8_t)color);
       writeStrobe(dInterface);
+
+      pixelIndex++;
+      if ( byteIndex <= 0)
+      {
+        byteIndex = 7;
+        dataIndex ++;
+      }
+      else
+      {
+        byteIndex--;
+      }
     }
   }
 }
@@ -255,33 +329,7 @@ void setPixels(struct DisplayInterface* dInterface, uint8_t * data,
   }
   else if (bitDepth == BIT_DEPTH_1BPP)
   {
-    uint16_t color = 0x0000;
-    uint32_t dataIndex = 0;
-    uint8_t byteIndex = 7;
-    uint32_t pixelIndex = 0;
-    while(pixelIndex < width*height)
-    {
-      color = secondaryColor;
-      if (data[dataIndex] & (1 << byteIndex))
-      {
-          color = primaryColor;
-      }
-      setPinsForCommandParam(dInterface, (uint8_t)(color >> 8));
-      writeStrobe(dInterface);
-      setPinsForCommandParam(dInterface, (uint8_t)color);
-      writeStrobe(dInterface);
-
-      pixelIndex++;
-      if ( byteIndex <= 0)
-      {
-        byteIndex = 7;
-        dataIndex ++;
-      }
-      else
-      {
-        byteIndex--;
-      }
-    }
+    setPixels1bpp(dInterface, data, width, height, scale, primaryColor, secondaryColor);
   }
 }
 

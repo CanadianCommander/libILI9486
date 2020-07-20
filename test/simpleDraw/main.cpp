@@ -103,8 +103,22 @@ uint8_t data1bpp[] = {0b00000000, 0b00000000,
                       0b00000000, 0b00000000,
                       0b00000000, 0b00000000,
                     };
+
+uint16_t arrowWidth = 8;
+uint16_t arrowHeight = 7;
+uint8_t dataArrow[] = {
+                      0b00001000,
+                      0b00001100,
+                      0b11111110,
+                      0b11111111,
+                      0b11111110,
+                      0b00001100,
+                      0b00001000
+};
+
 void loop()
 {
+  //======================= draw X's across screen ===============
   // WIDTH / HEIGHT flipped because we are in landscape
   for (unsigned int y = dataDimensions*dataScale; y < DISPLAY_WIDTH - dataDimensions*dataScale; y +=dataDimensions*dataScale)
   {
@@ -114,29 +128,49 @@ void loop()
     }
   }
 
+  //======================= clear display ===============
   uint16_t clearColor = random(65000);
   clearDisplay(&dInter, clearColor);
 
+
+  //======================= DRAW Happy faces  ===============
   // WIDTH / HEIGHT flipped because we are in landscape
-  for (unsigned int y = 0; y < DISPLAY_WIDTH; y +=data1bppDimensions * 2)
+  for (unsigned int y = 0; y < DISPLAY_WIDTH - data1bppDimensions * dataScale; y +=data1bppDimensions * dataScale * 2)
   {
-    for (unsigned int x = 0; x < DISPLAY_HEIGHT; x +=data1bppDimensions * 2)
+    for (unsigned int x = 0; x < DISPLAY_HEIGHT - data1bppDimensions * dataScale; x +=data1bppDimensions * dataScale * 2)
     {
-      writeDisplay1bpp(&dInter, data1bpp, random(65000), clearColor, x, y, data1bppDimensions, data1bppDimensions);
+      writeDisplay1bpp(&dInter, data1bpp, random(65000), clearColor, x, y, data1bppDimensions, data1bppDimensions, dataScale);
     }
   }
 
-  dataScale += 1;
-  if((int)dataScale % 10 == 0)
+  //======================= clear display ===============
+  clearColor = random(65000);
+  clearDisplay(&dInter, clearColor);
+
+  //======================= DRAW arrows ===============
+  // WIDTH / HEIGHT flipped because we are in landscape
+  for (unsigned int y = 0; y < DISPLAY_WIDTH - arrowHeight * dataScale; y +=arrowHeight * dataScale * 2)
   {
-    dataScale = 1;
+    for (unsigned int x = 0; x < DISPLAY_HEIGHT - arrowWidth * dataScale; x += arrowWidth * dataScale * 2)
+    {
+      writeDisplay1bpp(&dInter, dataArrow, random(65000), clearColor, x, y, arrowWidth, arrowHeight, dataScale);
+    }
   }
 
   Serial.write("Test complete in: ");
   Serial.print(millis() - startMsec);
-  Serial.write("ms\n");
+  Serial.write("ms  With Scaling: ");
+  Serial.print(dataScale);
+  Serial.write("\n");
 
-  clearColor= random(65000);
+
+  // increase scaling for next run
+  dataScale += 1;
+  if((int)dataScale % 8 == 0)
+  {
+    dataScale = 1;
+  }
+
   startMsec = millis();
 
 }
