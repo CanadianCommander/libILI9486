@@ -15,6 +15,9 @@ void setup()
   Serial.begin(115200);
 
   // setup interface
+  initializeDisplayInterface(&dInter);
+
+  // setup interface
   dInter.RESX_BANK = BANK_C;
   dInter.RESX_PIN = PORTC1;
 
@@ -54,9 +57,12 @@ void setup()
   dInter.DB7_BANK = BANK_D;
   dInter.DB7_PIN = PORTD7;
 
+  // optimize interface
+  buildDisplayInterface(&dInter);
+
   Serial.write("Init Display...");
   initializeDisplay(&dInter);
-  Serial.write("Done");
+  Serial.write("Done\n");
 }
 
 void loop()
@@ -64,7 +70,18 @@ void loop()
   uint8_t response[] = {0x00, 0x00, 0x00, 0x00};
   getDisplayStatus(&dInter, response);
 
-  if (response[0] == 0 && response[1] == 97 && response[2] == 0 && response[3] == 0)
+  Serial.write("======== STATUS BITS =======\n");
+  Serial.print(response[0], BIN);
+  Serial.write(",");
+  Serial.print(response[1], BIN);
+  Serial.write(",");
+  Serial.print(response[2], BIN);
+  Serial.write(",");
+  Serial.print(response[3], BIN);
+  Serial.write("\n");
+
+
+  if (response[0] == 0x80 && response[1] == 0x53 && response[2] == 0x4 && response[3] == 0x0)
   {
     Serial.write("Display status check. PASSED\n");
   }

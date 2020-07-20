@@ -108,14 +108,36 @@ void setDislayOrientation(struct DisplayInterface* dInterface, uint8_t orientati
 }
 
 void writeDisplay(struct DisplayInterface* dInterface, uint16_t * data,
-                  uint16_t x, uint16_t y, uint16_t width, uint16_t height)
+                  uint16_t x, uint16_t y, uint16_t width, uint16_t height, float scale)
+{
+  // set draw area
+  setDrawRegion(dInterface, x, y, width*scale, height*scale);
+
+  // write pixel data
+  setPixels(dInterface, (uint8_t*)data, width, height, scale, BIT_DEPTH_NATIVE, 0, 0);
+}
+
+/**
+* Similar to, writeDisplay(). But takes data in a 1bpp format. 1 == color 0 == altColor
+* This allows for greater memory efficency.
+* @param dInterface - the display interface
+* @param data - the data to write (1bpp)
+* @param color - the primary color (1)
+* @param altColor - the secondary color (0)
+* @param x - the x position to write the data at.
+* @param y - the y position to write the data at.
+* @param width - the width of the data
+* @param height - the height of the data
+*/
+void writeDisplay1bpp(struct DisplayInterface* dInterface, uint8_t * data,
+                  uint16_t color, uint16_t altColor, uint16_t x, uint16_t y,
+                  uint16_t width, uint16_t height)
 {
   // set draw area
   setDrawRegion(dInterface, x, y, width, height);
 
   // write pixel data
-  sendCommand(dInterface, COMMAND_WRITE_DISPLAY, (uint8_t*)data, (width * height) * 2, NULL,
-                COMMAND_WRITE_DISPLAY_RESPONSE_ROWS, COMMAND_WRITE_DISPLAY_DEAD_ROWS);
+  setPixels(dInterface, (uint8_t*)data, width, height, 1.0, BIT_DEPTH_1BPP, color, altColor);
 }
 
 void readDisplay(struct DisplayInterface* dInterface, uint16_t * data,

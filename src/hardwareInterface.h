@@ -7,6 +7,10 @@
 
 #define DEFAULT_PIXEL_FORMAT 0x55
 
+
+#define BIT_DEPTH_NATIVE 0
+#define BIT_DEPTH_1BPP 1
+
 /**
 * reset the display
 * @param dInterface - the display interface
@@ -34,6 +38,22 @@ uint8_t * sendCommand(struct DisplayInterface* dInterface, uint8_t command,
                       uint8_t* params, uint32_t countParams,
                       uint8_t* responseBuffer, uint8_t responseRows, uint8_t deadRows);
 
+
+/**
+* set pixels on the display. This is an alternate method to calling sendCommand. This method is faster
+* when processing non standard bit depths
+* @param dInterface - the display interface
+* @param data - the pixel data
+* @param width - pixel data width
+* @param height - pixel data height
+* @prarm scale - scalling to apply to the data
+* @param bitDepth - the bit depth of the pixel data
+* @param primaryColor - the primary color for use in 1bpp mode
+* @param secondaryColor - the secondary color for use in 1bpp mode
+*/
+void setPixels(struct DisplayInterface* dInterface, uint8_t * data,
+              uint16_t width, uint16_t height, float scale,
+              uint8_t bitDepth, uint16_t primaryColor, uint16_t secondaryColor);
 
 /**
 * sets the drawable region of the display

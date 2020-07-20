@@ -63,29 +63,79 @@ void setup()
 
   Serial.write("Init Display...");
   initializeDisplay(&dInter);
-  setDislayOrientation(&dInter, DISPLAY_ORIENTATION_PORTRAIT);
+  setDislayOrientation(&dInter, DISPLAY_ORIENTATION_LANDSCAPE);
   Serial.write("Done\n");
+
+  clearDisplay(&dInter, random(65000));
 
   startMsec = millis();
 }
 
-uint16_t iterX = 0;
-uint16_t iterY = 0;
 uint16_t clearColor = 0x0000;
-uint16_t data[] = {0x0FF0, 0x0000, 0x0000, 0x0000, 0x0000,
-                   0x0000, 0x0FF0, 0x0000, 0x0000, 0x0000,
-                   0x0000, 0x0000, 0x0FF0, 0x0000, 0x0000,
-                   0x0000, 0x0000, 0x0000, 0x0FF0, 0x0FF0,
+uint16_t dataDimensions = 9; // 9x9
+float dataScale = 1;
+uint16_t data[] = {0x00FF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFF00,
+                   0x0000, 0x00FF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xFF00, 0x0000,
+                   0x0000, 0x0000, 0x00FF, 0x0000, 0x0000, 0x0000, 0xFF00, 0x0000, 0x0000,
+                   0x0000, 0x0000, 0x0000, 0x00FF, 0x0000, 0xFF00, 0x0000, 0x0000, 0x0000,
+                   0x0000, 0x0000, 0x0000, 0x0000, 0x00FF, 0x0000, 0x0000, 0x0000, 0x0000,
+                   0x0000, 0x0000, 0x0000, 0xFF00, 0x0000, 0x00FF, 0x0000, 0x0000, 0x0000,
+                   0x0000, 0x0000, 0xFF00, 0x0000, 0x0000, 0x0000, 0x00FF, 0x0000, 0x0000,
+                   0x0000, 0xFF00, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x00FF, 0x0000,
+                   0xFF00, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x00FF,
                   };
-int dataSize = 20;
+
+uint8_t data1bppDimensions = 16; // 16x16
+uint8_t data1bpp[] = {0b00000000, 0b00000000,
+                      0b00111000, 0b00111000,
+                      0b00111000, 0b00111000,
+                      0b00000000, 0b00000000,
+                      0b00000000, 0b00000000,
+                      0b00000000, 0b00000000,
+                      0b00000000, 0b00000000,
+                      0b00000000, 0b00000000,
+                      0b11000000, 0b00000011,
+                      0b00110000, 0b00001100,
+                      0b00001110, 0b01110000,
+                      0b00000001, 0b10000000,
+                      0b00000000, 0b00000000,
+                      0b00000000, 0b00000000,
+                      0b00000000, 0b00000000,
+                      0b00000000, 0b00000000,
+                    };
 void loop()
 {
+  // WIDTH / HEIGHT flipped because we are in landscape
+  for (unsigned int y = dataDimensions*dataScale; y < DISPLAY_WIDTH - dataDimensions*dataScale; y +=dataDimensions*dataScale)
+  {
+    for (unsigned int x = dataDimensions*dataScale; x < DISPLAY_HEIGHT - dataDimensions*dataScale; x +=dataDimensions*dataScale)
+    {
+      writeDisplay(&dInter, data, x, y, dataDimensions, dataDimensions, dataScale);
+    }
+  }
+
+  uint16_t clearColor = random(65000);
   clearDisplay(&dInter, clearColor);
 
-  Serial.write("Display Written in: ");
+  // WIDTH / HEIGHT flipped because we are in landscape
+  for (unsigned int y = 0; y < DISPLAY_WIDTH; y +=data1bppDimensions * 2)
+  {
+    for (unsigned int x = 0; x < DISPLAY_HEIGHT; x +=data1bppDimensions * 2)
+    {
+      writeDisplay1bpp(&dInter, data1bpp, random(65000), clearColor, x, y, data1bppDimensions, data1bppDimensions);
+    }
+  }
+
+  dataScale += 1;
+  if((int)dataScale % 10 == 0)
+  {
+    dataScale = 1;
+  }
+
+  Serial.write("Test complete in: ");
   Serial.print(millis() - startMsec);
   Serial.write("ms\n");
-  
+
   clearColor= random(65000);
   startMsec = millis();
 

@@ -101,6 +101,23 @@ static void setPinsForCommandResponse(struct DisplayInterface* dInterface)
   setPin(dInterface, PIN_CX, 1);
 }
 
+static void setPixelsNatvie(struct DisplayInterface* dInterface, uint8_t * data,
+              uint16_t width, uint16_t height, float scale)
+{
+  uint16_t scaledWidth = width*scale;
+  uint16_t scaledHeight = height*scale;
+
+  for(uint16_t y = 0; y < scaledHeight; y ++){
+    for(uint16_t x = 0; x < scaledWidth; x ++){
+      uint16_t color = ((uint16_t*)data)[(int)((((int)(y/scale))*width) + (int)x/scale)];
+      setPinsForCommandParam(dInterface, (uint8_t)(color >> 8));
+      writeStrobe(dInterface);
+      setPinsForCommandParam(dInterface, (uint8_t)color);
+      writeStrobe(dInterface);
+    }
+  }
+}
+
 /////////////////////////// STATIC FUNCTIONS /////////////////////////////////
 
 /**
@@ -207,6 +224,67 @@ uint8_t * sendCommand(struct DisplayInterface* dInterface, uint8_t command,
   return responseBuffer;
 }
 
+
+/**
+* set pixels on the display. This is an alternate method to calling sendCommand. This method is faster
+* when processing non standard bit depths
+* @param dInterface - the display interface
+* @param data - the pixel data
+* @param width - pixel data width
+* @param height - pixel data height
+* @prarm scale - scalling to apply to the data
+* @param bitDepth - the bit depth of the pixel data
+* @param primaryColor - the primary color for use in 1bpp mode
+* @param secondaryColor - the secondary color for use in 1bpp mode
+*/
+void setPixels(struct DisplayInterface* dInterface, uint8_t * data,
+              uint16_t width, uint16_t height, float scale,
+              uint8_t bitDepth, uint16_t primaryColor, uint16_t secondaryColor)
+{
+  // send write command
+  setPinsForCommand(dInterface, COMMAND_WRITE_DISPLAY);
+  writeStrobe(dInterface);
+
+  // prep for param write.
+  setBusDirection(dInterface, 1);
+  setPin(dInterface, PIN_CX, 1);
+
+  if (bitDepth == BIT_DEPTH_NATIVE)
+  {
+    setPixelsNatvie(dInterface, data, width, height, scale);
+  }
+  else if (bitDepth == BIT_DEPTH_1BPP)
+  {
+    uint16_t color = 0x0000;
+    uint32_t dataIndex = 0;
+    uint8_t byteIndex = 7;
+    uint32_t pixelIndex = 0;
+    while(pixelIndex < width*height)
+    {
+      color = secondaryColor;
+      if (data[dataIndex] & (1 << byteIndex))
+      {
+          color = primaryColor;
+      }
+      setPinsForCommandParam(dInterface, (uint8_t)(color >> 8));
+      writeStrobe(dInterface);
+      setPinsForCommandParam(dInterface, (uint8_t)color);
+      writeStrobe(dInterface);
+
+      pixelIndex++;
+      if ( byteIndex <= 0)
+      {
+        byteIndex = 7;
+        dataIndex ++;
+      }
+      else
+      {
+        byteIndex--;
+      }
+    }
+  }
+}
+
 /**
 * sets the drawable region of the display
 * @param dInterface - the display interface
@@ -218,13 +296,13 @@ uint8_t * sendCommand(struct DisplayInterface* dInterface, uint8_t command,
 void setDrawRegion(struct DisplayInterface* dInterface, uint16_t x, uint16_t y, uint16_t width, uint16_t height)
 {
   //set x clip
-  uint16_t xEnd = x + width;
+  uint16_t xEnd = x + width -1;
   uint8_t paramsX[] = {(uint8_t)(x >> 8), (uint8_t)x, (uint8_t)(xEnd >> 8), (uint8_t)xEnd};
   sendCommand(dInterface, COMMAND_SET_COLUMN_ADDRESS, paramsX, COMMAND_SET_COLUMN_ADDRESS_PARAMS, NULL,
               COMMAND_SET_COLUMN_ADDRESS_RESPONSE_ROWS, COMMAND_SET_COLUMN_ADDRESS_DEAD_ROWS);
 
   //set y clip
-  uint16_t yEnd = y + height;
+  uint16_t yEnd = y + height - 1;
   uint8_t paramsY[] = {(uint8_t)(y >> 8), (uint8_t)y, (uint8_t)(yEnd >> 8), (uint8_t)yEnd};
   sendCommand(dInterface, COMMAND_SET_PAGE_ADDRESS, paramsY, COMMAND_SET_PAGE_ADDRESS_PARAMS, NULL,
               COMMAND_SET_PAGE_ADDRESS_RESPONSE_ROWS, COMMAND_SET_PAGE_ADDRESS_DEAD_ROWS);
