@@ -108,6 +108,7 @@ struct OptimizedPins {
   uint8_t PIN_DB14_PIN_OFFSET;
   uint8_t PIN_DB15_PIN_OFFSET;
 
+  bool unsafeOptimizations;
   uint8_t PIXEL_BANK_MASK_B;
   uint8_t PIXEL_BANK_MASK_C;
   uint8_t PIXEL_BANK_MASK_D;
@@ -187,7 +188,9 @@ void setDataBus8(struct DisplayInterface* dInterface, uint8_t value);
 * Fill out the ARCH specific optimization structure.
 * @param dInterface - the display interface
 * @param optPins - the optimized pins structure to be filled out;
+* @param unsafe - if true unsafe (breaks compatiability) optimizations are used. These may require the display
+                  to be hooked up to specific pins. The exact requirments are MCU specific 
 */
-void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * optPins);
+void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * optPins, bool unsafe);
 
 #endif //LIBILI9486_MCU_H

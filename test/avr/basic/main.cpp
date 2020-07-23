@@ -58,7 +58,7 @@ void setup()
   dInter.DB7_PIN = PORTD7;
 
   // optimize interface
-  buildDisplayInterface(&dInter);
+  buildDisplayInterface(&dInter, false);
 
   Serial.write("Init Display...");
   initializeDisplay(&dInter);

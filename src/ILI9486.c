@@ -13,15 +13,16 @@ void initializeDisplayInterface(struct DisplayInterface * dInterface)
   memset(dInterface, 0x00, sizeof(struct DisplayInterface));
   dInterface->orientation = DISPLAY_ORIENTATION_PORTRAIT;
 }
-
 /**
 * Build display interface applying ARCH specific optimizations to the display interface. updating
 * the interface after calling this WILL HAVE NO EFFECT unless you call this AGAIN.
 * @param dInterface - the interface to optimize
+* @param unsafe - if true unsafe optimizations will be applied. These are MCU specifc and may require
+                  the display to be connected to certain pins (HUGE PERFORMANCE BOOST FOR AVR).
 */
-void buildDisplayInterface(struct DisplayInterface* dInterface)
+void buildDisplayInterface(struct DisplayInterface* dInterface, bool unsafe)
 {
-  optimizePins(dInterface, (struct OptimizedPins*)malloc(sizeof(struct OptimizedPins)));
+  optimizePins(dInterface, (struct OptimizedPins*)malloc(sizeof(struct OptimizedPins)), unsafe);
 }
 
 

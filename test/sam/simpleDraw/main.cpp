@@ -58,7 +58,7 @@ void setup()
   dInter.DB7_PIN = getPinOffset(PIO_PER_P15);
 
   // optimize interface
-  buildDisplayInterface(&dInter);
+  buildDisplayInterface(&dInter, true);
 
   Serial.write("Init Display...");
   initializeDisplay(&dInter);

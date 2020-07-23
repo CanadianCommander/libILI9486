@@ -113,8 +113,10 @@ void initializeDisplayInterface(struct DisplayInterface * dInterface);
 * Build display interface applying ARCH specific optimizations to the display interface. updating
 * the interface after calling this WILL HAVE NO EFFECT unless you call this AGAIN.
 * @param dInterface - the interface to optimize
+* @param unsafe - if true unsafe optimizations will be applied. These are MCU specifc and may require
+                  the display to be connected to certain pins (HUGE PERFORMANCE BOOST FOR AVR).
 */
-void buildDisplayInterface(struct DisplayInterface* dInterface);
+void buildDisplayInterface(struct DisplayInterface* dInterface, bool unsafe);
 
 /**
 * destroy a display interface. MUST BE CALLED when you are done with the interface,
@@ -227,7 +229,7 @@ void clearDisplay(struct DisplayInterface* dInterface, uint16_t clearColor);
 * convert a mask style pin to a pin offset. This type of pin definition is found
 * on the sam3x8e aka the Arduino Due
 * @param pinMask - the mask style pin to convert
-* @return a pin offset 
+* @return a pin offset
 */
 uint8_t getPinOffset(uint32_t pinMask);
 

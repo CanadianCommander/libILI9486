@@ -74,9 +74,22 @@ inline void setPin(struct DisplayInterface* dInterface, uint8_t pin, uint8_t val
 
 inline void setDataBus8(struct DisplayInterface* dInterface, uint8_t value)
 {
-  PORTB = (PORTB & ~dInterface->optimization->PIXEL_BANK_MASK_B) | (dInterface->optimization->PIXEL_BANK_MASK_B & value);
-  PORTC = (PORTC & ~dInterface->optimization->PIXEL_BANK_MASK_C) | (dInterface->optimization->PIXEL_BANK_MASK_C & value);
-  PORTD = (PORTD & ~dInterface->optimization->PIXEL_BANK_MASK_D) | (dInterface->optimization->PIXEL_BANK_MASK_D & value);
+  if (dInterface->optimization->unsafeOptimizations)
+  {
+    PORTB = (PORTB & ~dInterface->optimization->PIXEL_BANK_MASK_B) | (dInterface->optimization->PIXEL_BANK_MASK_B & value);
+    PORTD = (PORTD & ~dInterface->optimization->PIXEL_BANK_MASK_D) | (dInterface->optimization->PIXEL_BANK_MASK_D & value);
+  }
+  else
+  {
+    setPin(dInterface, PIN_DB0, (value >> 0) & 0x1);
+    setPin(dInterface, PIN_DB1, (value >> 1) & 0x1);
+    setPin(dInterface, PIN_DB2, (value >> 2) & 0x1);
+    setPin(dInterface, PIN_DB3, (value >> 3) & 0x1);
+    setPin(dInterface, PIN_DB4, (value >> 4) & 0x1);
+    setPin(dInterface, PIN_DB5, (value >> 5) & 0x1);
+    setPin(dInterface, PIN_DB6, (value >> 6) & 0x1);
+    setPin(dInterface, PIN_DB7, (value >> 7) & 0x1);
+  }
 }
 
 #define AVR_CASE_READ_PIN(PIN_NAME) case PIN_##PIN_NAME: \
@@ -133,14 +146,18 @@ void setPinDirection(struct DisplayInterface* dInterface, uint8_t pin, uint8_t o
 #define AVR_SET_OPTIMIZED_DDRX(PIN_NAME) optPins->PIN_##PIN_NAME##_DDR = getDDRx(dInterface->PIN_NAME##_BANK)
 #define AVR_SET_OPTIMIZED_PIN_OFFSET(PIN_NAME) optPins->PIN_##PIN_NAME##_PIN_OFFSET = dInterface->PIN_NAME##_PIN
 
+
 /**
-* fill out the provided optimizedPins structure. The display interfaces optimized
-* attribute is set to the ptr optPins.
+* Fill out the ARCH specific optimization structure.
 * @param dInterface - the display interface
 * @param optPins - the optimized pins structure to be filled out;
+* @param unsafe - if true unsafe (breaks compatiability) optimizations are used. These may require the display
+                  to be hooked up to specific pins. The exact requirments are MCU specific
 */
-void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * optPins)
+void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * optPins, bool unsafe)
 {
+  memset(optPins, 0x00, sizeof(struct OptimizedPins));
+
   AVR_SET_OPTIMIZED_PORTX(RESX);
   AVR_SET_OPTIMIZED_PORTX(CSX);
   AVR_SET_OPTIMIZED_PORTX(CX);
@@ -207,22 +224,26 @@ void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * op
   AVR_SET_OPTIMIZED_PIN_OFFSET(DB14);
   AVR_SET_OPTIMIZED_PIN_OFFSET(DB15);
 
-  memset(&optPins->PIXEL_BANK_MASK_B, 0x00, 1);
-  memset(&optPins->PIXEL_BANK_MASK_C, 0x00, 1);
-  memset(&optPins->PIXEL_BANK_MASK_D, 0x00, 1);
-  for(uint8_t i =0; i < 16; i ++)
+  if (unsafe)
   {
-    if((uint8_t*) *(((uint16_t*)optPins) + OP_PORT_START + PIN_DB0 + i) == &PORTB)
+    optPins->unsafeOptimizations = true;
+    memset(&optPins->PIXEL_BANK_MASK_B, 0x00, 1);
+    memset(&optPins->PIXEL_BANK_MASK_C, 0x00, 1);
+    memset(&optPins->PIXEL_BANK_MASK_D, 0x00, 1);
+    for(uint8_t i =0; i < 16; i ++)
     {
-      optPins->PIXEL_BANK_MASK_B |= (1 << i);
-    }
-    else if((uint8_t*) *(((uint16_t*)optPins) + OP_PORT_START + PIN_DB0 + i) == &PORTC)
-    {
-      optPins->PIXEL_BANK_MASK_C |= (1 << i);
-    }
-    else if((uint8_t*) *(((uint16_t*)optPins) + OP_PORT_START + PIN_DB0 + i) == &PORTD)
-    {
-      optPins->PIXEL_BANK_MASK_D |= (1 << i);
+      if((uint8_t*) *(((uint16_t*)optPins) + OP_PORT_START + PIN_DB0 + i) == &PORTB)
+      {
+        optPins->PIXEL_BANK_MASK_B |= (1 << i);
+      }
+      else if((uint8_t*) *(((uint16_t*)optPins) + OP_PORT_START + PIN_DB0 + i) == &PORTC)
+      {
+        optPins->PIXEL_BANK_MASK_C |= (1 << i);
+      }
+      else if((uint8_t*) *(((uint16_t*)optPins) + OP_PORT_START + PIN_DB0 + i) == &PORTD)
+      {
+        optPins->PIXEL_BANK_MASK_D |= (1 << i);
+      }
     }
   }
 
@@ -406,12 +427,13 @@ inline void setPinDirection(struct DisplayInterface* dInterface, uint8_t pin, ui
 #define SAM_SET_OPTIMIZED_SODR_REG(PIN_NAME) optPins->PIN_##PIN_NAME##_PIO_SODR = lookupRegister(dInterface->PIN_NAME##_BANK, REG_PIO_SODR)
 #define SAM_SET_OPTIMIZED_PIN_MASK(PIN_NAME) optPins->PIN_##PIN_NAME##_PIN_MASK = (1 << dInterface->PIN_NAME##_PIN)
 /**
-* fill out the provided optimizedPins structure. The display interfaces optimized
-* attribute is set to the ptr optPins.
+* Fill out the ARCH specific optimization structure.
 * @param dInterface - the display interface
 * @param optPins - the optimized pins structure to be filled out;
+* @param unsafe - if true unsafe (breaks compatiability) optimizations are used. These may require the display
+                  to be hooked up to specific pins. The exact requirments are MCU specific
 */
-void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * optPins)
+void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * optPins, bool unsafe)
 {
   SAM_ENABLE_PIN(RESX);
   SAM_ENABLE_PIN(CSX);
