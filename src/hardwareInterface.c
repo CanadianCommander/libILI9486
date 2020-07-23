@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "avr/io.h"
 #include <Arduino.h>
 
 #include "hardwareInterface.h"
@@ -17,7 +16,6 @@ static uint16_t readBus(struct DisplayInterface* dInterface)
 
   // pull read pin low
   setPin(dInterface, PIN_RDX, 0);
-
   uint8_t count = 8;
   if (dInterface->inputMode == LCD_INPUT_MODE_PARALLEL_16)
   {
@@ -31,7 +29,6 @@ static uint16_t readBus(struct DisplayInterface* dInterface)
 
   //reset read pin to high
   setPin(dInterface, PIN_RDX, 1);
-
   return output;
 }
 
@@ -88,7 +85,7 @@ static void setPinsForCommand(struct DisplayInterface* dInterface, uint8_t comma
 */
 static inline void setPinsForCommandParam(struct DisplayInterface* dInterface, uint8_t param)
 {
-  setPixelBus8(dInterface, param);
+  setDataBus8(dInterface, param);
 }
 
 /**
@@ -212,6 +209,9 @@ void resetDisplay(struct DisplayInterface* dInterface)
 */
 void configureDisplay(struct DisplayInterface* dInterface)
 {
+  // do MCU specific setup
+  setupMCU();
+
   // select chip
   setPinDirection(dInterface, PIN_CSX, 1);
   setPin(dInterface, PIN_CSX, 0);

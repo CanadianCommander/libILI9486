@@ -12,8 +12,7 @@
 #define DISPLAY_WIDTH 320
 #define DISPLAY_HEIGHT 480
 
-#ifdef ARDUINO_ARCH_AVR
-//=============================== AVR ===================================
+#define BANK_A 0
 #define BANK_B 1
 #define BANK_C 2
 #define BANK_D 3
@@ -102,7 +101,6 @@ struct DisplayInterface
     // ARCH specific optimization
     struct OptimizedPins * optimization;
 };
-#endif
 
 /**
 * sets defaults on the display interface. Probably a good idea to call this.
@@ -164,7 +162,14 @@ void setSleepMode(struct DisplayInterface* dInterface, boolean sleep);
 * @param dInterface - the display interface
 * @param orientation - the orientation to set.
 */
-void setDislayOrientation(struct DisplayInterface* dInterface, uint8_t orientation);
+void setDisplayOrientation(struct DisplayInterface* dInterface, uint8_t orientation);
+
+/**
+* set the brightness of the display
+* @param dInterface - the display interface
+* @param brightness - brightness 0x00 (dim) - 0xFF (bright)
+*/
+void setDisplayBrightness(struct DisplayInterface* dInterface, uint8_t brightness);
 
 /**
 * write data to the display
@@ -214,5 +219,16 @@ void readDisplay(struct DisplayInterface* dInterface, uint16_t * data,
 * @param clearColor - the color to clear the display to.
 */
 void clearDisplay(struct DisplayInterface* dInterface, uint16_t clearColor);
+
+
+//======================== MISC / Helper ===================================
+
+/**
+* convert a mask style pin to a pin offset. This type of pin definition is found
+* on the sam3x8e aka the Arduino Due
+* @param pinMask - the mask style pin to convert
+* @return a pin offset 
+*/
+uint8_t getPinOffset(uint32_t pinMask);
 
 #endif

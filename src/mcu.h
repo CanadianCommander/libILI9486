@@ -30,8 +30,8 @@
 #define PIN_DB15 20
 ///////////////PINS////////////////////
 
-// ========= OPTIMIZATION STRUCT ===========
 #ifdef ARDUINO_ARCH_AVR
+//=================== ARCH AVR =========================
 
 #define OP_PORT_START 0
 #define OP_DDR_START 42
@@ -114,7 +114,66 @@ struct OptimizedPins {
   // ORDER OF FIELDS EXTREMELY IMPORTANT
 };
 
+#elif ARDUINO_ARCH_SAM
+//=================== ARCH SAM =========================
+#define OP_PIO_SODR_START 0
+#define OP_PIN_MASK_START 84
+
+struct OptimizedPins
+{
+  // ORDER OF FIELDS EXTREMELY IMPORTANT
+  volatile uint32_t* PIN_RESX_PIO_SODR;
+  volatile uint32_t* PIN_CSX_PIO_SODR;
+  volatile uint32_t* PIN_CX_PIO_SODR;
+  volatile uint32_t* PIN_WRX_PIO_SODR;
+  volatile uint32_t* PIN_RDX_PIO_SODR;
+
+  volatile uint32_t* PIN_DB0_PIO_SODR;
+  volatile uint32_t* PIN_DB1_PIO_SODR;
+  volatile uint32_t* PIN_DB2_PIO_SODR;
+  volatile uint32_t* PIN_DB3_PIO_SODR;
+  volatile uint32_t* PIN_DB4_PIO_SODR;
+  volatile uint32_t* PIN_DB5_PIO_SODR;
+  volatile uint32_t* PIN_DB6_PIO_SODR;
+  volatile uint32_t* PIN_DB7_PIO_SODR;
+  volatile uint32_t* PIN_DB8_PIO_SODR;
+  volatile uint32_t* PIN_DB9_PIO_SODR;
+  volatile uint32_t* PIN_DB10_PIO_SODR;
+  volatile uint32_t* PIN_DB11_PIO_SODR;
+  volatile uint32_t* PIN_DB12_PIO_SODR;
+  volatile uint32_t* PIN_DB13_PIO_SODR;
+  volatile uint32_t* PIN_DB14_PIO_SODR;
+  volatile uint32_t* PIN_DB15_PIO_SODR;
+
+
+  uint32_t PIN_RESX_PIN_MASK;
+  uint32_t PIN_CSX_PIN_MASK;
+  uint32_t PIN_CX_PIN_MASK;
+  uint32_t PIN_WRX_PIN_MASK;
+  uint32_t PIN_RDX_PIN_MASK;
+
+  uint32_t PIN_DB0_PIN_MASK;
+  uint32_t PIN_DB1_PIN_MASK;
+  uint32_t PIN_DB2_PIN_MASK;
+  uint32_t PIN_DB3_PIN_MASK;
+  uint32_t PIN_DB4_PIN_MASK;
+  uint32_t PIN_DB5_PIN_MASK;
+  uint32_t PIN_DB6_PIN_MASK;
+  uint32_t PIN_DB7_PIN_MASK;
+  uint32_t PIN_DB8_PIN_MASK;
+  uint32_t PIN_DB9_PIN_MASK;
+  uint32_t PIN_DB10_PIN_MASK;
+  uint32_t PIN_DB11_PIN_MASK;
+  uint32_t PIN_DB12_PIN_MASK;
+  uint32_t PIN_DB13_PIN_MASK;
+  uint32_t PIN_DB14_PIN_MASK;
+  uint32_t PIN_DB15_PIN_MASK;
+  // ORDER OF FIELDS EXTREMELY IMPORTANT
+};
 #endif
+
+// do whatever one time setup is needed (mcu specific)
+void setupMCU();
 
 void setPin(struct DisplayInterface* dInterface, uint8_t pin, uint8_t value);
 
@@ -122,7 +181,7 @@ uint8_t readPin(struct DisplayInterface* dInterface, uint8_t pin);
 
 void setPinDirection(struct DisplayInterface* dInterface, uint8_t pin, uint8_t output);
 
-void setPixelBus8(struct DisplayInterface* dInterface, uint8_t value);
+void setDataBus8(struct DisplayInterface* dInterface, uint8_t value);
 
 /**
 * Fill out the ARCH specific optimization structure.

@@ -1,5 +1,4 @@
 #include "Arduino.h"
-#include "avr/io.h"
 
 #include "ILI9486.h"
 #include "hardwareInterface.h"
@@ -98,13 +97,28 @@ void setSleepMode(struct DisplayInterface* dInterface, boolean sleep)
 * @param dInterface - the display interface
 * @param orientation - the orientation to set.
 */
-void setDislayOrientation(struct DisplayInterface* dInterface, uint8_t orientation)
+void setDisplayOrientation(struct DisplayInterface* dInterface, uint8_t orientation)
 {
   uint8_t param = (orientation << 5);
   sendCommand(dInterface, COMMAND_SET_MADCTL, &param , COMMAND_SET_MADCTL_PARAMS,
               NULL, COMMAND_SET_MADCTL_RESPONSE_ROWS, COMMAND_SET_MADCTL_DEAD_ROWS);
 
   dInterface->orientation = orientation;
+}
+
+/**
+* set the brightness of the display
+* @param dInterface - the display interface
+* @param brightness - brightness 0x00 (dim) - 0xFF (bright)
+*/
+void setDisplayBrightness(struct DisplayInterface* dInterface, uint8_t brightness)
+{
+  uint8_t param = COMMAND_SET_CTRL_BRIGHTNESS_CONTROLL_ON;
+  sendCommand(dInterface, COMMAND_SET_CTRL, &param , COMMAND_SET_CTRL_PARAMS,
+              NULL, COMMAND_SET_CTRL_RESPONSE_ROWS, COMMAND_SET_CTRL_DEAD_ROWS);
+
+  sendCommand(dInterface, COMMAND_SET_DISPLAY_BRIGHTNESS, &brightness, COMMAND_SET_DISPLAY_BRIGHTNESS_PARAMS,
+              NULL, COMMAND_SET_DISPLAY_BRIGHTNESS_RESPONSE_ROWS, COMMAND_SET_DISPLAY_BRIGHTNESS_DEAD_ROWS);
 }
 
 void writeDisplay(struct DisplayInterface* dInterface, uint16_t * data,
@@ -168,4 +182,22 @@ void clearDisplay(struct DisplayInterface* dInterface, uint16_t clearColor)
 
   //fill
   fillRectangle(dInterface, clearColor, (uint32_t)width*(uint32_t)height);
+}
+
+/**
+* convert a mask style pin to a pin offset. This type of pin definition is found
+* on the sam3x8e aka the Arduino Due
+* @param pinMask - the mask style pin to convert
+* @return a pin offset
+*/
+uint8_t getPinOffset(uint32_t pinMask)
+{
+  for (uint8_t i = 0; i < 32; i ++)
+  {
+    if (!(pinMask >> (i+1)))
+    {
+      return i;
+    }
+  }
+  return 0;
 }

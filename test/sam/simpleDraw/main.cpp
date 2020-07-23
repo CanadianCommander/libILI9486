@@ -1,10 +1,10 @@
 #include "Arduino.h"
-#include <avr/io.h>
+#include "sam3x8e.h"
 
 extern "C"
 {
-  #include "mcu.h"
   #include "ILI9486.h"
+  #include "mcu.h"
 }
 
 struct DisplayInterface dInter;
@@ -12,61 +12,61 @@ struct DisplayInterface dInter;
 uint32_t startMsec = 0;
 void setup()
 {
-//  DDRB |= (1 << PORTB5);
-//  PORTB |= (1 << PORTB5);
   Serial.begin(115200);
 
   // setup interface
   initializeDisplayInterface(&dInter);
 
+  // setup interface
   dInter.RESX_BANK = BANK_C;
-  dInter.RESX_PIN = PORTC1;
+  dInter.RESX_PIN = getPinOffset(PIO_PER_P21);
 
-  dInter.CSX_BANK = BANK_C;
-  dInter.CSX_PIN = PORTC2;
+  dInter.CSX_BANK = BANK_D;
+  dInter.CSX_PIN = getPinOffset(PIO_PER_P7);
 
   dInter.CX_BANK = BANK_C;
-  dInter.CX_PIN = PORTC3;
+  dInter.CX_PIN = getPinOffset(PIO_PER_P29);
 
-  dInter.WRX_BANK = BANK_B;
-  dInter.WRX_PIN = PORTB2;
+  dInter.WRX_BANK = BANK_C;
+  dInter.WRX_PIN = getPinOffset(PIO_PER_P22);
 
-  dInter.RDX_BANK = BANK_B;
-  dInter.RDX_PIN = PORTB3;
+  dInter.RDX_BANK = BANK_C;
+  dInter.RDX_PIN = getPinOffset(PIO_PER_P23);
 
-  dInter.DB0_BANK = BANK_B;
-  dInter.DB0_PIN = PORTB0;
+  dInter.DB0_BANK = BANK_C;
+  dInter.DB0_PIN = getPinOffset(PIO_PER_P13);
 
   dInter.DB1_BANK = BANK_B;
-  dInter.DB1_PIN = PORTB1;
+  dInter.DB1_PIN = getPinOffset(PIO_PER_P21);
 
-  dInter.DB2_BANK = BANK_D;
-  dInter.DB2_PIN = PORTD2;
+  dInter.DB2_BANK = BANK_C;
+  dInter.DB2_PIN = getPinOffset(PIO_PER_P6);
 
-  dInter.DB3_BANK = BANK_D;
-  dInter.DB3_PIN = PORTD3;
+  dInter.DB3_BANK = BANK_C;
+  dInter.DB3_PIN = getPinOffset(PIO_PER_P8);
 
-  dInter.DB4_BANK = BANK_D;
-  dInter.DB4_PIN = PORTD4;
+  dInter.DB4_BANK = BANK_A;
+  dInter.DB4_PIN = getPinOffset(PIO_PER_P19);
 
-  dInter.DB5_BANK = BANK_D;
-  dInter.DB5_PIN = PORTD5;
+  dInter.DB5_BANK = BANK_C;
+  dInter.DB5_PIN = getPinOffset(PIO_PER_P19);
 
-  dInter.DB6_BANK = BANK_D;
-  dInter.DB6_PIN = PORTD6;
+  dInter.DB6_BANK = BANK_C;
+  dInter.DB6_PIN = getPinOffset(PIO_PER_P17);
 
-  dInter.DB7_BANK = BANK_D;
-  dInter.DB7_PIN = PORTD7;
+  dInter.DB7_BANK = BANK_C;
+  dInter.DB7_PIN = getPinOffset(PIO_PER_P15);
 
   // optimize interface
   buildDisplayInterface(&dInter);
 
   Serial.write("Init Display...");
   initializeDisplay(&dInter);
-  setDislayOrientation(&dInter, DISPLAY_ORIENTATION_LANDSCAPE);
+  setDisplayOrientation(&dInter, DISPLAY_ORIENTATION_LANDSCAPE);
   Serial.write("Done\n");
 
   clearDisplay(&dInter, random(65000));
+  setDisplayBrightness(&dInter, 0xFF);
 
   startMsec = millis();
 }

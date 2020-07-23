@@ -1,4 +1,4 @@
-USER_LIB_PATH=../../../
+USER_LIB_PATH=../../../../
 
 ARDUINO_LIBS = libILI9486
 

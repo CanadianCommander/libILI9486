@@ -1,11 +1,12 @@
 #include <Arduino.h>
 #include <stdio.h>
-#include "avr/io.h"
 
 #include "mcu.h"
 
 
 #ifdef ARDUINO_ARCH_AVR
+//=================== ARCH AVR =========================
+#include "avr/io.h"
 
 volatile uint8_t * getPORT(uint8_t bank)
 {
@@ -52,6 +53,11 @@ volatile uint8_t * getPINx(uint8_t bank)
   }
 }
 
+// do whatever one time setup is needed (mcu specific)
+void setupMCU()
+{
+  // no setup need for AVR
+}
 
 #define AVR_CASE_SET_PIN(PIN_NAME) case PIN_##PIN_NAME: \
   *getPORT(dInterface->PIN_NAME##_BANK) = (*getPORT(dInterface->PIN_NAME##_BANK) & ~(1 << dInterface->PIN_NAME##_PIN)) | (value << dInterface->PIN_NAME##_PIN); \
@@ -66,7 +72,7 @@ inline void setPin(struct DisplayInterface* dInterface, uint8_t pin, uint8_t val
 }
 
 
-inline void setPixelBus8(struct DisplayInterface* dInterface, uint8_t value)
+inline void setDataBus8(struct DisplayInterface* dInterface, uint8_t value)
 {
   PORTB = (PORTB & ~dInterface->optimization->PIXEL_BANK_MASK_B) | (dInterface->optimization->PIXEL_BANK_MASK_B & value);
   PORTC = (PORTC & ~dInterface->optimization->PIXEL_BANK_MASK_C) | (dInterface->optimization->PIXEL_BANK_MASK_C & value);
@@ -224,4 +230,256 @@ void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * op
 }
 
 // END #ifdef ARDUINO_ARCH_AVR
+#elif ARDUINO_ARCH_SAM
+//=================== ARCH SAM =========================
+#include "sam3x8e.h"
+
+// Register offsets from REG_PIO_PER
+#define REG_PIO_PER 0
+#define REG_PIO_PDR 1
+#define REG_PIO_PSR 2
+#define REG_PIO_OER 4
+#define REG_PIO_ODR 5
+#define REG_PIO_OSR 6
+//...
+#define REG_PIO_SODR 12
+#define REG_PIO_CODR 13
+//...
+#define REG_PIO_PDSR 15
+//...
+#define REG_PIO_PUDR 24
+#define REG_PIO_PUER 25
+//...
+#define REG_PIO_OWER 40
+#define REG_PIO_OWDR 41
+
+// get a pointer to a register form the specified bank
+static uint32_t * lookupRegister(uint8_t bank, uint8_t reg)
+{
+  switch(bank)
+  {
+    case BANK_A:
+      return (uint32_t *) (&REG_PIOA_PER + reg);
+
+    case BANK_B:
+      return (uint32_t *) (&REG_PIOB_PER + reg);
+
+    case BANK_C:
+      return (uint32_t *) (&REG_PIOC_PER + reg);
+
+    case BANK_D:
+      return (uint32_t *) (&REG_PIOD_PER + reg);
+
+    default:
+      return NULL;
+  }
+}
+
+static void setPullup(uint8_t bank, uint8_t pinOffset, bool enabled)
+{
+  uint32_t * reg;
+  if(enabled)
+  {
+    reg = lookupRegister(bank,REG_PIO_PUER);
+  }
+  else
+  {
+    reg = lookupRegister(bank,REG_PIO_PUDR);
+  }
+  *reg |= (1 << pinOffset);
+}
+
+
+// do whatever one time setup is needed (mcu specific)
+void setupMCU()
+{
+  //enable all IO banks found on the Arduino Due
+  REG_PMC_PCER0 |= (1 << ID_PIOA) | (1 << ID_PIOB) | (1 << ID_PIOC) | (1 << ID_PIOD);
+}
+
+// set pin value
+inline void setPin(struct DisplayInterface* dInterface, uint8_t pin, uint8_t value)
+{
+  *(((uint32_t*) *((uint32_t*)dInterface->optimization + pin)) + (value ^ 0x1)) |= *(((uint32_t*)dInterface->optimization) + OP_PIN_MASK_START/4 + pin);
+}
+
+inline void setDataBus8(struct DisplayInterface* dInterface, uint8_t value)
+{
+  setPin(dInterface, PIN_DB0, (value >> 0) & 0x1);
+  setPin(dInterface, PIN_DB1, (value >> 1) & 0x1);
+  setPin(dInterface, PIN_DB2, (value >> 2) & 0x1);
+  setPin(dInterface, PIN_DB3, (value >> 3) & 0x1);
+  setPin(dInterface, PIN_DB4, (value >> 4) & 0x1);
+  setPin(dInterface, PIN_DB5, (value >> 5) & 0x1);
+  setPin(dInterface, PIN_DB6, (value >> 6) & 0x1);
+  setPin(dInterface, PIN_DB7, (value >> 7) & 0x1);
+}
+
+#define SAM_READ_PIN_CASE(PIN_NAME) case PIN_##PIN_NAME: \
+  return (*lookupRegister(dInterface->PIN_NAME##_BANK, REG_PIO_PDSR) & (1 << dInterface->PIN_NAME##_PIN)) >> dInterface->PIN_NAME##_PIN;
+
+// read pin value
+inline uint8_t readPin(struct DisplayInterface* dInterface, uint8_t pin)
+{
+  switch(pin)
+  {
+    SAM_READ_PIN_CASE(RESX);
+    SAM_READ_PIN_CASE(CSX);
+    SAM_READ_PIN_CASE(CX);
+    SAM_READ_PIN_CASE(WRX);
+    SAM_READ_PIN_CASE(RDX);
+    SAM_READ_PIN_CASE(DB0);
+    SAM_READ_PIN_CASE(DB1);
+    SAM_READ_PIN_CASE(DB2);
+    SAM_READ_PIN_CASE(DB3);
+    SAM_READ_PIN_CASE(DB4);
+    SAM_READ_PIN_CASE(DB5);
+    SAM_READ_PIN_CASE(DB6);
+    SAM_READ_PIN_CASE(DB7);
+    SAM_READ_PIN_CASE(DB8);
+    SAM_READ_PIN_CASE(DB9);
+    SAM_READ_PIN_CASE(DB10);
+    SAM_READ_PIN_CASE(DB11);
+    SAM_READ_PIN_CASE(DB12);
+    SAM_READ_PIN_CASE(DB13);
+    SAM_READ_PIN_CASE(DB14);
+    SAM_READ_PIN_CASE(DB15);
+  }
+  return 0;
+}
+
+#define SAM_SET_PIN_DIRECTION_CASE(PIN_NAME) case PIN_##PIN_NAME: \
+  _setPinDirection(dInterface->PIN_NAME##_BANK, dInterface->PIN_NAME##_PIN, output); \
+  break;
+
+static inline void _setPinDirection(uint8_t bank, uint8_t pinOffset, uint8_t output)
+{
+  if(output)
+  {
+    *lookupRegister(bank, REG_PIO_OER) |= (1 << pinOffset);
+    *lookupRegister(bank, REG_PIO_OWER) |= (1 << pinOffset);
+    setPullup(bank,pinOffset,false);
+  }
+  else
+  {
+    *lookupRegister(bank, REG_PIO_ODR) |= (1 << pinOffset);
+    *lookupRegister(bank, REG_PIO_OWDR) |= (1 << pinOffset);
+    setPullup(bank,pinOffset,true);
+  }
+}
+
+/**
+* set the direction of a pin
+* @param dInterface - the display interface
+* @param pin - the pin to set direction for
+* @param output - if 1 output 0 input
+*/
+inline void setPinDirection(struct DisplayInterface* dInterface, uint8_t pin, uint8_t output)
+{
+  switch(pin)
+  {
+    SAM_SET_PIN_DIRECTION_CASE(RESX);
+    SAM_SET_PIN_DIRECTION_CASE(CSX);
+    SAM_SET_PIN_DIRECTION_CASE(CX);
+    SAM_SET_PIN_DIRECTION_CASE(WRX);
+    SAM_SET_PIN_DIRECTION_CASE(RDX);
+    SAM_SET_PIN_DIRECTION_CASE(DB0);
+    SAM_SET_PIN_DIRECTION_CASE(DB1);
+    SAM_SET_PIN_DIRECTION_CASE(DB2);
+    SAM_SET_PIN_DIRECTION_CASE(DB3);
+    SAM_SET_PIN_DIRECTION_CASE(DB4);
+    SAM_SET_PIN_DIRECTION_CASE(DB5);
+    SAM_SET_PIN_DIRECTION_CASE(DB6);
+    SAM_SET_PIN_DIRECTION_CASE(DB7);
+    SAM_SET_PIN_DIRECTION_CASE(DB8);
+    SAM_SET_PIN_DIRECTION_CASE(DB9);
+    SAM_SET_PIN_DIRECTION_CASE(DB10);
+    SAM_SET_PIN_DIRECTION_CASE(DB11);
+    SAM_SET_PIN_DIRECTION_CASE(DB12);
+    SAM_SET_PIN_DIRECTION_CASE(DB13);
+    SAM_SET_PIN_DIRECTION_CASE(DB14);
+    SAM_SET_PIN_DIRECTION_CASE(DB15);
+  }
+}
+
+#define SAM_ENABLE_PIN(PIN_NAME) *lookupRegister(dInterface->PIN_NAME##_BANK, REG_PIO_PER) = (1 << dInterface->PIN_NAME##_PIN)
+#define SAM_SET_OPTIMIZED_SODR_REG(PIN_NAME) optPins->PIN_##PIN_NAME##_PIO_SODR = lookupRegister(dInterface->PIN_NAME##_BANK, REG_PIO_SODR)
+#define SAM_SET_OPTIMIZED_PIN_MASK(PIN_NAME) optPins->PIN_##PIN_NAME##_PIN_MASK = (1 << dInterface->PIN_NAME##_PIN)
+/**
+* fill out the provided optimizedPins structure. The display interfaces optimized
+* attribute is set to the ptr optPins.
+* @param dInterface - the display interface
+* @param optPins - the optimized pins structure to be filled out;
+*/
+void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * optPins)
+{
+  SAM_ENABLE_PIN(RESX);
+  SAM_ENABLE_PIN(CSX);
+  SAM_ENABLE_PIN(CX);
+  SAM_ENABLE_PIN(WRX);
+  SAM_ENABLE_PIN(RDX);
+  SAM_ENABLE_PIN(DB0);
+  SAM_ENABLE_PIN(DB1);
+  SAM_ENABLE_PIN(DB2);
+  SAM_ENABLE_PIN(DB3);
+  SAM_ENABLE_PIN(DB4);
+  SAM_ENABLE_PIN(DB5);
+  SAM_ENABLE_PIN(DB6);
+  SAM_ENABLE_PIN(DB7);
+  SAM_ENABLE_PIN(DB8);
+  SAM_ENABLE_PIN(DB9);
+  SAM_ENABLE_PIN(DB10);
+  SAM_ENABLE_PIN(DB11);
+  SAM_ENABLE_PIN(DB12);
+  SAM_ENABLE_PIN(DB13);
+  SAM_ENABLE_PIN(DB14);
+  SAM_ENABLE_PIN(DB15);
+
+  SAM_SET_OPTIMIZED_SODR_REG(RESX);
+  SAM_SET_OPTIMIZED_SODR_REG(CSX);
+  SAM_SET_OPTIMIZED_SODR_REG(CX);
+  SAM_SET_OPTIMIZED_SODR_REG(WRX);
+  SAM_SET_OPTIMIZED_SODR_REG(RDX);
+  SAM_SET_OPTIMIZED_SODR_REG(DB0);
+  SAM_SET_OPTIMIZED_SODR_REG(DB1);
+  SAM_SET_OPTIMIZED_SODR_REG(DB2);
+  SAM_SET_OPTIMIZED_SODR_REG(DB3);
+  SAM_SET_OPTIMIZED_SODR_REG(DB4);
+  SAM_SET_OPTIMIZED_SODR_REG(DB5);
+  SAM_SET_OPTIMIZED_SODR_REG(DB6);
+  SAM_SET_OPTIMIZED_SODR_REG(DB7);
+  SAM_SET_OPTIMIZED_SODR_REG(DB8);
+  SAM_SET_OPTIMIZED_SODR_REG(DB9);
+  SAM_SET_OPTIMIZED_SODR_REG(DB10);
+  SAM_SET_OPTIMIZED_SODR_REG(DB11);
+  SAM_SET_OPTIMIZED_SODR_REG(DB12);
+  SAM_SET_OPTIMIZED_SODR_REG(DB13);
+  SAM_SET_OPTIMIZED_SODR_REG(DB14);
+  SAM_SET_OPTIMIZED_SODR_REG(DB15);
+
+  SAM_SET_OPTIMIZED_PIN_MASK(RESX);
+  SAM_SET_OPTIMIZED_PIN_MASK(CSX);
+  SAM_SET_OPTIMIZED_PIN_MASK(CX);
+  SAM_SET_OPTIMIZED_PIN_MASK(WRX);
+  SAM_SET_OPTIMIZED_PIN_MASK(RDX);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB0);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB1);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB2);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB3);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB4);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB5);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB6);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB7);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB8);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB9);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB10);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB11);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB12);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB13);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB14);
+  SAM_SET_OPTIMIZED_PIN_MASK(DB15);
+
+  dInterface->optimization = optPins;
+}
+
 #endif
