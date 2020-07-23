@@ -1,8 +1,8 @@
 #include "Arduino.h"
 
 #include "ILI9486.h"
-#include "hardwareInterface.h"
-#include "mcu.h"
+#include "lib/hardwareInterface.h"
+#include "lib/mcu.h"
 
 /**
 * sets defaults on the display interface. Probably a good idea to call this.

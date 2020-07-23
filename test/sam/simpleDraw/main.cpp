@@ -4,7 +4,6 @@
 extern "C"
 {
   #include "ILI9486.h"
-  #include "mcu.h"
 }
 
 struct DisplayInterface dInter;

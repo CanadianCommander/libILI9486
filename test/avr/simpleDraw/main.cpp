@@ -3,7 +3,6 @@
 
 extern "C"
 {
-  #include "mcu.h"
   #include "ILI9486.h"
 }
 
