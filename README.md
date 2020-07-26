@@ -6,6 +6,7 @@ pretty pictures on your LCD!
 #### MCU
 - AVR boards. tested on Nano / Uno. should work on Mega.
 - SAM boards. tested on sam3x8e (Arduino Due).
+- STM32 boards. tested on STN32F411CE (Black Pill).
 
 ### Interface
 - Supports 8 bit parallel interface. with plans to support 16bit, when I actually have a     16bit display to test with
@@ -21,6 +22,7 @@ extern "C"
 }
 ```
 Then configure the pins you intend to use for your display. Mapping them as below.
+Note this is an `AVR` example. See other board examples under `test` folder
 ```
 struct DisplayInterface displayInterface;
 
@@ -72,7 +74,7 @@ Finally "build" the interface, and initialize the display
 buildDisplayInterface(&displayInterface, false);
 initializeDisplay(&displayInterface);
 ```
-At this point you are ready to draw to the display! All available functions are listed in "ILI9486.h" with descriptions. There are also complete examples / tests under the `test` directory. These tests require [Arduino-Makefile](https://github.com/sudar/Arduino-Makefile) to build.
+At this point you are ready to draw to the display! All available functions are listed in "ILI9486.h" with descriptions. There are also complete examples / tests under the `test` directory. These tests require [Arduino-Makefile](https://github.com/sudar/Arduino-Makefile) to build, except for STM32 which requires `arduino-cli` (because Arduino Make doesn't seem to support it).
 
 ## Pro tip
 Compiling your program with `-O2` gives a massive boost to performance, without taking up to much more FLASH.

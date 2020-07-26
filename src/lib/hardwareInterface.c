@@ -39,6 +39,12 @@ static uint16_t readBus(struct DisplayInterface* dInterface)
 */
 static void setBusDirection(struct DisplayInterface* dInterface, uint8_t output)
 {
+  if (dInterface->busDirection == output)
+  { // short circuit if already in correct mode
+    return;
+  }
+  dInterface->busDirection = output;
+
   uint8_t count = 8;
   if (dInterface->inputMode == LCD_INPUT_MODE_PARALLEL_16)
   {

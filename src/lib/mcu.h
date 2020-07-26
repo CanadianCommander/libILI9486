@@ -171,6 +171,61 @@ struct OptimizedPins
   uint32_t PIN_DB15_PIN_MASK;
   // ORDER OF FIELDS EXTREMELY IMPORTANT
 };
+#elif ARDUINO_ARCH_STM32
+
+#define OP_PIO_GPIO_START 0
+#define OP_PIN_MASK_START 84
+struct OptimizedPins
+{
+  // ORDER OF FIELDS EXTREMELY IMPORTANT
+  volatile uint32_t* PIN_RESX_GPIO;
+  volatile uint32_t* PIN_CSX_GPIO;
+  volatile uint32_t* PIN_CX_GPIO;
+  volatile uint32_t* PIN_WRX_GPIO;
+  volatile uint32_t* PIN_RDX_GPIO;
+
+  volatile uint32_t* PIN_DB0_GPIO;
+  volatile uint32_t* PIN_DB1_GPIO;
+  volatile uint32_t* PIN_DB2_GPIO;
+  volatile uint32_t* PIN_DB3_GPIO;
+  volatile uint32_t* PIN_DB4_GPIO;
+  volatile uint32_t* PIN_DB5_GPIO;
+  volatile uint32_t* PIN_DB6_GPIO;
+  volatile uint32_t* PIN_DB7_GPIO;
+  volatile uint32_t* PIN_DB8_GPIO;
+  volatile uint32_t* PIN_DB9_GPIO;
+  volatile uint32_t* PIN_DB10_GPIO;
+  volatile uint32_t* PIN_DB11_GPIO;
+  volatile uint32_t* PIN_DB12_GPIO;
+  volatile uint32_t* PIN_DB13_GPIO;
+  volatile uint32_t* PIN_DB14_GPIO;
+  volatile uint32_t* PIN_DB15_GPIO;
+
+  uint16_t PIN_RESX_PIN_MASK;
+  uint16_t PIN_CSX_PIN_MASK;
+  uint16_t PIN_CX_PIN_MASK;
+  uint16_t PIN_WRX_PIN_MASK;
+  uint16_t PIN_RDX_PIN_MASK;
+
+  uint16_t PIN_DB0_PIN_MASK;
+  uint16_t PIN_DB1_PIN_MASK;
+  uint16_t PIN_DB2_PIN_MASK;
+  uint16_t PIN_DB3_PIN_MASK;
+  uint16_t PIN_DB4_PIN_MASK;
+  uint16_t PIN_DB5_PIN_MASK;
+  uint16_t PIN_DB6_PIN_MASK;
+  uint16_t PIN_DB7_PIN_MASK;
+  uint16_t PIN_DB8_PIN_MASK;
+  uint16_t PIN_DB9_PIN_MASK;
+  uint16_t PIN_DB10_PIN_MASK;
+  uint16_t PIN_DB11_PIN_MASK;
+  uint16_t PIN_DB12_PIN_MASK;
+  uint16_t PIN_DB13_PIN_MASK;
+  uint16_t PIN_DB14_PIN_MASK;
+  uint16_t PIN_DB15_PIN_MASK;
+  // ORDER OF FIELDS EXTREMELY IMPORTANT
+};
+
 #endif
 
 // do whatever one time setup is needed (mcu specific)
@@ -189,7 +244,7 @@ void setDataBus8(struct DisplayInterface* dInterface, uint8_t value);
 * @param dInterface - the display interface
 * @param optPins - the optimized pins structure to be filled out;
 * @param unsafe - if true unsafe (breaks compatiability) optimizations are used. These may require the display
-                  to be hooked up to specific pins. The exact requirments are MCU specific 
+                  to be hooked up to specific pins. The exact requirments are MCU specific
 */
 void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * optPins, bool unsafe);
 

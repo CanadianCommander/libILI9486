@@ -504,4 +504,183 @@ void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * op
   dInterface->optimization = optPins;
 }
 
+#elif ARDUINO_ARCH_STM32
+#include "stm32f411xe.h"
+
+static uint32_t* gpioFromBank(uint8_t bank)
+{
+  switch(bank)
+  {
+    case BANK_A:
+      return GPIOA;
+    case BANK_B:
+      return GPIOB;
+    case BANK_C:
+      return GPIOC;
+    default:
+      return NULL;
+  }
+}
+
+// do whatever one time setup is needed (mcu specific)
+void setupMCU()
+{
+  __GPIOA_CLK_ENABLE();
+  __GPIOB_CLK_ENABLE();
+  __GPIOC_CLK_ENABLE();
+}
+
+#define STM32_SET_PIN_CASE(PIN_NAME) case PIN_##PIN_NAME: \
+  return HAL_GPIO_WritePin(gpioFromBank(dInterface->PIN_NAME##_BANK), (0x1 << dInterface->PIN_NAME##_PIN), value);
+
+// set pin value
+inline void setPin(struct DisplayInterface* dInterface, uint8_t pin, uint8_t value)
+{
+  ((GPIO_TypeDef *)*(((uint32_t*)dInterface->optimization) + pin))->BSRR = ((uint32_t)*(((uint16_t*)(((uint32_t*)dInterface->optimization) + OP_PIN_MASK_START/4)) + pin)) << (16 * (0x1 ^ value));
+}
+
+inline void setDataBus8(struct DisplayInterface* dInterface, uint8_t value)
+{
+  setPin(dInterface, PIN_DB0, (value >> 0) & 0x1);
+  setPin(dInterface, PIN_DB1, (value >> 1) & 0x1);
+  setPin(dInterface, PIN_DB2, (value >> 2) & 0x1);
+  setPin(dInterface, PIN_DB3, (value >> 3) & 0x1);
+  setPin(dInterface, PIN_DB4, (value >> 4) & 0x1);
+  setPin(dInterface, PIN_DB5, (value >> 5) & 0x1);
+  setPin(dInterface, PIN_DB6, (value >> 6) & 0x1);
+  setPin(dInterface, PIN_DB7, (value >> 7) & 0x1);
+}
+
+#define STM32_READ_PIN_CASE(PIN_NAME) case PIN_##PIN_NAME: \
+  return HAL_GPIO_ReadPin(gpioFromBank(dInterface->PIN_NAME##_BANK), (0x1 << dInterface->PIN_NAME##_PIN));
+
+// read pin value
+inline uint8_t readPin(struct DisplayInterface* dInterface, uint8_t pin)
+{
+  switch(pin)
+  {
+    STM32_READ_PIN_CASE(RESX);
+    STM32_READ_PIN_CASE(CSX);
+    STM32_READ_PIN_CASE(CX);
+    STM32_READ_PIN_CASE(WRX);
+    STM32_READ_PIN_CASE(RDX);
+    STM32_READ_PIN_CASE(DB0);
+    STM32_READ_PIN_CASE(DB1);
+    STM32_READ_PIN_CASE(DB2);
+    STM32_READ_PIN_CASE(DB3);
+    STM32_READ_PIN_CASE(DB4);
+    STM32_READ_PIN_CASE(DB5);
+    STM32_READ_PIN_CASE(DB6);
+    STM32_READ_PIN_CASE(DB7);
+    STM32_READ_PIN_CASE(DB8);
+    STM32_READ_PIN_CASE(DB9);
+    STM32_READ_PIN_CASE(DB10);
+    STM32_READ_PIN_CASE(DB11);
+    STM32_READ_PIN_CASE(DB12);
+    STM32_READ_PIN_CASE(DB13);
+    STM32_READ_PIN_CASE(DB14);
+    STM32_READ_PIN_CASE(DB15);
+  }
+}
+
+#define STM32_SET_PIN_DIRECTION_CASE(PIN_NAME) case PIN_##PIN_NAME: \
+  gpioInit.Pin = (0x1 << dInterface->PIN_NAME##_PIN); \
+  gpioInit.Mode = (output ? GPIO_MODE_OUTPUT_PP : GPIO_MODE_INPUT); \
+  gpioInit.Pull = GPIO_NOPULL; \
+  gpioInit.Speed = GPIO_SPEED_FREQ_VERY_HIGH; \
+  HAL_GPIO_Init(gpioFromBank(dInterface->PIN_NAME##_BANK), &gpioInit);\
+  break;
+
+/**
+* set the direction of a pin
+* @param dInterface - the display interface
+* @param pin - the pin to set direction for
+* @param output - if 1 output 0 input
+*/
+inline void setPinDirection(struct DisplayInterface* dInterface, uint8_t pin, uint8_t output)
+{
+  GPIO_InitTypeDef gpioInit;
+  switch(pin)
+  {
+    STM32_SET_PIN_DIRECTION_CASE(RESX);
+    STM32_SET_PIN_DIRECTION_CASE(CSX);
+    STM32_SET_PIN_DIRECTION_CASE(CX);
+    STM32_SET_PIN_DIRECTION_CASE(WRX);
+    STM32_SET_PIN_DIRECTION_CASE(RDX);
+    STM32_SET_PIN_DIRECTION_CASE(DB0);
+    STM32_SET_PIN_DIRECTION_CASE(DB1);
+    STM32_SET_PIN_DIRECTION_CASE(DB2);
+    STM32_SET_PIN_DIRECTION_CASE(DB3);
+    STM32_SET_PIN_DIRECTION_CASE(DB4);
+    STM32_SET_PIN_DIRECTION_CASE(DB5);
+    STM32_SET_PIN_DIRECTION_CASE(DB6);
+    STM32_SET_PIN_DIRECTION_CASE(DB7);
+    STM32_SET_PIN_DIRECTION_CASE(DB8);
+    STM32_SET_PIN_DIRECTION_CASE(DB9);
+    STM32_SET_PIN_DIRECTION_CASE(DB10);
+    STM32_SET_PIN_DIRECTION_CASE(DB11);
+    STM32_SET_PIN_DIRECTION_CASE(DB12);
+    STM32_SET_PIN_DIRECTION_CASE(DB13);
+    STM32_SET_PIN_DIRECTION_CASE(DB14);
+    STM32_SET_PIN_DIRECTION_CASE(DB15);
+  }
+}
+
+#define STM_SET_OPTIMIZED_GPIO(PIN_NAME) optPins->PIN_##PIN_NAME##_GPIO = gpioFromBank(dInterface->PIN_NAME##_BANK)
+#define STM_SET_OPTIMIZED_PIN_MASK(PIN_NAME) optPins->PIN_##PIN_NAME##_PIN_MASK = (1 << dInterface->PIN_NAME##_PIN)
+/**
+* Fill out the ARCH specific optimization structure.
+* @param dInterface - the display interface
+* @param optPins - the optimized pins structure to be filled out;
+* @param unsafe - if true unsafe (breaks compatiability) optimizations are used. These may require the display
+                  to be hooked up to specific pins. The exact requirments are MCU specific
+*/
+void optimizePins(struct DisplayInterface* dInterface, struct OptimizedPins * optPins, bool unsafe)
+{
+  STM_SET_OPTIMIZED_GPIO(RESX);
+  STM_SET_OPTIMIZED_GPIO(CSX);
+  STM_SET_OPTIMIZED_GPIO(CX);
+  STM_SET_OPTIMIZED_GPIO(WRX);
+  STM_SET_OPTIMIZED_GPIO(RDX);
+  STM_SET_OPTIMIZED_GPIO(DB0);
+  STM_SET_OPTIMIZED_GPIO(DB1);
+  STM_SET_OPTIMIZED_GPIO(DB2);
+  STM_SET_OPTIMIZED_GPIO(DB3);
+  STM_SET_OPTIMIZED_GPIO(DB4);
+  STM_SET_OPTIMIZED_GPIO(DB5);
+  STM_SET_OPTIMIZED_GPIO(DB6);
+  STM_SET_OPTIMIZED_GPIO(DB7);
+  STM_SET_OPTIMIZED_GPIO(DB8);
+  STM_SET_OPTIMIZED_GPIO(DB9);
+  STM_SET_OPTIMIZED_GPIO(DB10);
+  STM_SET_OPTIMIZED_GPIO(DB11);
+  STM_SET_OPTIMIZED_GPIO(DB12);
+  STM_SET_OPTIMIZED_GPIO(DB13);
+  STM_SET_OPTIMIZED_GPIO(DB14);
+  STM_SET_OPTIMIZED_GPIO(DB15);
+
+  STM_SET_OPTIMIZED_PIN_MASK(RESX);
+  STM_SET_OPTIMIZED_PIN_MASK(CSX);
+  STM_SET_OPTIMIZED_PIN_MASK(CX);
+  STM_SET_OPTIMIZED_PIN_MASK(WRX);
+  STM_SET_OPTIMIZED_PIN_MASK(RDX);
+  STM_SET_OPTIMIZED_PIN_MASK(DB0);
+  STM_SET_OPTIMIZED_PIN_MASK(DB1);
+  STM_SET_OPTIMIZED_PIN_MASK(DB2);
+  STM_SET_OPTIMIZED_PIN_MASK(DB3);
+  STM_SET_OPTIMIZED_PIN_MASK(DB4);
+  STM_SET_OPTIMIZED_PIN_MASK(DB5);
+  STM_SET_OPTIMIZED_PIN_MASK(DB6);
+  STM_SET_OPTIMIZED_PIN_MASK(DB7);
+  STM_SET_OPTIMIZED_PIN_MASK(DB8);
+  STM_SET_OPTIMIZED_PIN_MASK(DB9);
+  STM_SET_OPTIMIZED_PIN_MASK(DB10);
+  STM_SET_OPTIMIZED_PIN_MASK(DB11);
+  STM_SET_OPTIMIZED_PIN_MASK(DB12);
+  STM_SET_OPTIMIZED_PIN_MASK(DB13);
+  STM_SET_OPTIMIZED_PIN_MASK(DB14);
+  STM_SET_OPTIMIZED_PIN_MASK(DB15);
+
+  dInterface->optimization = optPins;
+}
 #endif

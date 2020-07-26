@@ -17,6 +17,9 @@
 #define BANK_C 2
 #define BANK_D 3
 
+#define BUS_DIRECTION_INPUT 0
+#define BUS_DIRECTION_OUTPUT 1
+
 struct DisplayInterface
 {
     // one of PARALLEL_8,  PARALLEL_16
@@ -24,6 +27,9 @@ struct DisplayInterface
 
     //display orientation one of, DISPLAY_ORIENTATION_PORTRAIT, DISPLAY_ORIENTATION_LANDSCAPE
     uint8_t orientation;
+
+    // enum. BUS_DIRECTION_INPUT, BUS_DIRECTION_OUTPUT
+    uint8_t busDirection;
 
     // pins are tuples. BANK + PIN.
     // BANK is the IO, BANK, i.e. BANK_B.
